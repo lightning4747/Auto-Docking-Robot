@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Docking Robot: Hackathon Blueprint</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Warm neutral light gray */
+            color: #1f2937;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Chart Container Specifics - Mandatory Styling */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            height: 350px; /* Base height */
+            max-height: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Logic Flow Connector Lines (CSS Only) */
+        .connector-line {
+            width: 2px;
+            background-color: #cbd5e1;
+            flex-grow: 1;
+            min-height: 20px;
+        }
+
+        /* Interactive Element Highlights */
+        .interactive-card {
+            transition: all 0.3s ease;
+        }
+        .interactive-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-color: #3b82f6;
+        }
+
+        .nav-btn.active {
+            background-color: #ffffff;
+            color: #2563eb;
+            border-bottom: 2px solid #2563eb;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Placeholder Comments Required -->
+    <!-- Chosen Palette: "Tech Neutral" - Slate/Gray background, White cards, Royal Blue primary accents, Emerald Green for success states. -->
+    <!-- Application Structure Plan: Dashboard Layout. 
+         1. Hero Section: Project Title & Mission. 
+         2. Tabbed Navigation: Splits the complex hackathon planning into manageable chunks: 
+            - "Mission Brief": Overview, requirements, and success metrics.
+            - "Hardware Lab": Component selection, trade-offs (Radar Chart), and power budget.
+            - "Code Logic": Interactive State Machine showing the software architecture.
+            - "48h Timeline": A Gantt-style breakdown of the 2-day hackathon schedule.
+         3. Interactive elements are used to drill down into specific technical details without overwhelming the user initially. 
+         Reasoning: Hackathons are chaotic. A structured, tabbed "Command Center" reduces cognitive load and allows the team to focus on one domain (Hardware vs Software vs Time) at a time. -->
+    <!-- Visualization & Content Choices:
+         - Sensor Analysis (Radar Chart): Goal is to Compare trade-offs between IR, Ultrasonic, and Camera. Radar chart effectively shows multi-variable comparison (Cost, Precision, Difficulty).
+         - Power Budget (Doughnut Chart): Goal is to Inform about battery usage distribution.
+         - Logic Flow (CSS/HTML Interactive Diagram): Goal is to Organize the software state machine. Clicking states reveals pseudo-code. Better than static text.
+         - Timeline (Interactive List): Goal is to Change perspective on time management. clicking phases reveals tasks.
+         - NO SVG/Mermaid used. All diagrams built with HTML/CSS borders and flexbox. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="h-8 w-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold mr-3">AD</div>
+                    <h1 class="text-xl font-bold text-gray-900">Auto-Docking Protocol <span class="text-xs font-normal text-gray-500 ml-2">Hackathon Planner</span></h1>
+                </div>
+                <div class="text-sm font-medium text-gray-500">
+                    Target: <span class="text-green-600">±2cm Accuracy</span>
+                </div>
+            </div>
+            <!-- Navigation -->
+            <nav class="flex space-x-8 overflow-x-auto" aria-label="Tabs">
+                <button onclick="switchTab('brief')" id="nav-brief" class="nav-btn active whitespace-nowrap py-4 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">Mission Brief</button>
+                <button onclick="switchTab('hardware')" id="nav-hardware" class="nav-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">Hardware Lab</button>
+                <button onclick="switchTab('software')" id="nav-software" class="nav-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">Logic & Algorithms</button>
+                <button onclick="switchTab('timeline')" id="nav-timeline" class="nav-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">48h Timeline</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+
+        <!-- TAB 1: MISSION BRIEF -->
+        <section id="view-brief" class="space-y-6">
+            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Project Overview</h2>
+                <p class="text-gray-600 mb-6 leading-relaxed">
+                    This module outlines the core requirements for the 2-day hackathon challenge. The objective is to engineer a small mobile robot capable of autonomously detecting and physically aligning with a charging station using simple sensor arrays. Success is measured by the ability to trigger a charging indicator without human intervention.
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Metric 1 -->
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <div class="text-blue-600 text-sm font-bold uppercase tracking-wide mb-1">Constraint</div>
+                        <div class="text-lg font-semibold text-gray-900">48 Hours</div>
+                        <p class="text-xs text-gray-500 mt-1">Design, Build, Code, Test</p>
+                    </div>
+                    <!-- Metric 2 -->
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <div class="text-blue-600 text-sm font-bold uppercase tracking-wide mb-1">Target Accuracy</div>
+                        <div class="text-lg font-semibold text-gray-900">&lt; 5 Centimeters</div>
+                        <p class="text-xs text-gray-500 mt-1">Lateral alignment margin</p>
+                    </div>
+                    <!-- Metric 3 -->
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <div class="text-blue-600 text-sm font-bold uppercase tracking-wide mb-1">Key Interaction</div>
+                        <div class="text-lg font-semibold text-gray-900">Physical Contact</div>
+                        <p class="text-xs text-gray-500 mt-1">Must trigger charging circuit</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Requirements List -->
+                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Core Requirements</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-5 w-5 text-green-500 text-lg leading-none mr-2">&#10003;</span>
+                            <span class="text-gray-600 text-sm">Mobile chassis (2WD or 4WD)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-5 w-5 text-green-500 text-lg leading-none mr-2">&#10003;</span>
+                            <span class="text-gray-600 text-sm">Docking Station (Passive or Active Beacon)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-5 w-5 text-green-500 text-lg leading-none mr-2">&#10003;</span>
+                            <span class="text-gray-600 text-sm">Power Management (Simulated Charging)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-5 w-5 text-green-500 text-lg leading-none mr-2">&#10003;</span>
+                            <span class="text-gray-600 text-sm">Feedback System (LEDs indicating "Searching", "Docked")</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Knowns & Unknowns -->
+                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Strategy Assessment</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-medium text-gray-700">Mechanical Simplicity</span>
+                                <span class="text-gray-500">80%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full" style="width: 80%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-medium text-gray-700">Sensor Integration Difficulty</span>
+                                <span class="text-gray-500">65%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-yellow-500 h-2 rounded-full" style="width: 65%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-medium text-gray-700">Algorithm Complexity (PID)</span>
+                                <span class="text-gray-500">90%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-red-500 h-2 rounded-full" style="width: 90%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: HARDWARE LAB -->
+        <section id="view-hardware" class="hidden space-y-6">
+            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Hardware Configuration</h2>
+                <p class="text-gray-600 mb-6">Analyze sensor trade-offs and component selection. For a 2-day hackathon, ease of implementation often beats high precision.</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    <!-- Sensor Comparison Chart -->
+                    <div class="flex flex-col">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Sensor Technology Trade-off</h3>
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                            <div class="chart-container">
+                                <canvas id="sensorRadarChart"></canvas>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-3 text-center">Comparison of standard hackathon sensors.</p>
+                    </div>
+
+                    <!-- Recommended Stack -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Recommended Bill of Materials</h3>
+                        <div class="space-y-3">
+                            <!-- Item 1 -->
+                            <div class="group interactive-card p-3 rounded-lg border border-gray-200 bg-white cursor-pointer" onclick="updateHardwareDetail('mcu')">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium text-gray-900">Microcontroller</span>
+                                    <span class="text-xs font-mono bg-blue-100 text-blue-800 px-2 py-1 rounded">Arduino Uno / ESP32</span>
+                                </div>
+                                <div class="hidden mt-2 text-sm text-gray-600 group-hover:block">
+                                    Choose Arduino for 5V sensor compatibility or ESP32 for processing power.
+                                </div>
+                            </div>
+                            <!-- Item 2 -->
+                            <div class="group interactive-card p-3 rounded-lg border border-gray-200 bg-white cursor-pointer" onclick="updateHardwareDetail('motor')">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium text-gray-900">Motor Driver</span>
+                                    <span class="text-xs font-mono bg-blue-100 text-blue-800 px-2 py-1 rounded">L298N / TB6612FNG</span>
+                                </div>
+                                <div class="hidden mt-2 text-sm text-gray-600 group-hover:block">
+                                    L298N is bulky but reliable. TB6612FNG is compact and efficient.
+                                </div>
+                            </div>
+                            <!-- Item 3 -->
+                            <div class="group interactive-card p-3 rounded-lg border border-gray-200 bg-white cursor-pointer" onclick="updateHardwareDetail('sensor')">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium text-gray-900">Primary Sensor</span>
+                                    <span class="text-xs font-mono bg-blue-100 text-blue-800 px-2 py-1 rounded">IR Photodiodes</span>
+                                </div>
+                                <div class="hidden mt-2 text-sm text-gray-600 group-hover:block">
+                                    Using an IR beacon on the dock and 2-3 receivers on the bot is the simplest, most robust method for short range.
+                                </div>
+                            </div>
+                             <!-- Item 4 -->
+                             <div class="group interactive-card p-3 rounded-lg border border-gray-200 bg-white cursor-pointer" onclick="updateHardwareDetail('power')">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium text-gray-900">Power Source</span>
+                                    <span class="text-xs font-mono bg-blue-100 text-blue-800 px-2 py-1 rounded">2x 18650 Li-Ion</span>
+                                </div>
+                                <div class="hidden mt-2 text-sm text-gray-600 group-hover:block">
+                                    Provide 7.4V. Regulate to 5V for logic, use raw for motors.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="hardware-detail-box" class="mt-6 bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                            <h4 class="font-bold text-blue-900 text-sm uppercase tracking-wide">Component Detail</h4>
+                            <p id="hardware-detail-text" class="text-blue-800 text-sm mt-1">Select a component above to see technical notes.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: SOFTWARE LOGIC -->
+        <section id="view-software" class="hidden space-y-6">
+            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Algorithmic Flow</h2>
+                <p class="text-gray-600 mb-6">Designing a robust Finite State Machine (FSM) is critical. The robot should never be "confused"; it should always be in a defined state.</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- FSM Interactive Diagram -->
+                    <div class="lg:col-span-1 flex flex-col space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">State Machine</h3>
+                        <div class="flex flex-col space-y-0">
+                            <!-- State 1 -->
+                            <div onclick="showStateCode('search')" class="cursor-pointer p-4 bg-gray-50 border-2 border-gray-300 rounded hover:border-blue-500 hover:bg-blue-50 transition-colors text-center font-bold text-gray-700">
+                                1. SCAN / SEARCH
+                            </div>
+                            <div class="h-6 w-0.5 bg-gray-300 mx-auto"></div>
+                            <!-- State 2 -->
+                            <div onclick="showStateCode('approach')" class="cursor-pointer p-4 bg-gray-50 border-2 border-gray-300 rounded hover:border-blue-500 hover:bg-blue-50 transition-colors text-center font-bold text-gray-700">
+                                2. PID APPROACH
+                            </div>
+                            <div class="h-6 w-0.5 bg-gray-300 mx-auto"></div>
+                            <!-- State 3 -->
+                            <div onclick="showStateCode('align')" class="cursor-pointer p-4 bg-gray-50 border-2 border-gray-300 rounded hover:border-blue-500 hover:bg-blue-50 transition-colors text-center font-bold text-gray-700">
+                                3. PRECISION ALIGN
+                            </div>
+                            <div class="h-6 w-0.5 bg-gray-300 mx-auto"></div>
+                            <!-- State 4 -->
+                            <div onclick="showStateCode('dock')" class="cursor-pointer p-4 bg-gray-50 border-2 border-gray-300 rounded hover:border-blue-500 hover:bg-blue-50 transition-colors text-center font-bold text-gray-700">
+                                4. DOCK / CHARGE
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Code Preview Panel -->
+                    <div class="lg:col-span-2">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Logic & Pseudo-Code</h3>
+                        <div class="bg-slate-800 rounded-lg p-6 font-mono text-sm text-gray-300 h-96 overflow-y-auto shadow-inner">
+                            <div id="code-display">
+                                <span class="text-gray-500">// Select a state on the left to view logic</span><br>
+                                <span class="text-purple-400">void</span> <span class="text-blue-400">loop</span>() {<br>
+                                &nbsp;&nbsp;<span class="text-purple-400">switch</span> (currentState) {<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">case</span> SEARCH: searchRoutine(); <span class="text-purple-400">break</span>;<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">case</span> APPROACH: pidControl(); <span class="text-purple-400">break</span>;<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">case</span> ALIGN: fineTune(); <span class="text-purple-400">break</span>;<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">case</span> DOCK: stopAndCharge(); <span class="text-purple-400">break</span>;<br>
+                                &nbsp;&nbsp;}<br>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tech Stack Tags -->
+            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Programming Stack</h3>
+                <div class="flex flex-wrap gap-2">
+                    <span class="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-medium">C++ / Arduino</span>
+                    <span class="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-medium">Python (Raspberry Pi)</span>
+                    <span class="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-medium">PID Library</span>
+                    <span class="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-medium">State Machines</span>
+                    <span class="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-medium">PWM Signal Processing</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: TIMELINE -->
+        <section id="view-timeline" class="hidden space-y-6">
+            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">48-Hour Execution Plan</h2>
+                <p class="text-gray-600 mb-6">A strict schedule is required to integrate hardware and software within the time limit. Click phases for checklist.</p>
+
+                <div class="relative border-l-4 border-blue-200 ml-4 space-y-8">
+                    <!-- Phase 1 -->
+                    <div class="relative pl-8 cursor-pointer group" onclick="toggleTimeline('p1')">
+                        <div class="absolute -left-3 top-0 bg-white border-4 border-blue-500 w-6 h-6 rounded-full"></div>
+                        <h4 class="font-bold text-lg text-gray-900">0h - 12h: Mechanical & Assembly</h4>
+                        <p class="text-sm text-gray-500">The "Skeleton" Phase</p>
+                        <div id="timeline-p1" class="hidden mt-3 p-4 bg-gray-50 rounded border border-gray-200 text-sm">
+                            <ul class="list-disc list-inside space-y-1 text-gray-700">
+                                <li>Assemble Chassis & Motor mounts</li>
+                                <li>Solder motor drivers and power switch</li>
+                                <li>Mount sensors (ensure rigid mounting for accuracy)</li>
+                                <li>Test motor directionality (basic forward/back code)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Phase 2 -->
+                    <div class="relative pl-8 cursor-pointer group" onclick="toggleTimeline('p2')">
+                        <div class="absolute -left-3 top-0 bg-white border-4 border-blue-400 w-6 h-6 rounded-full"></div>
+                        <h4 class="font-bold text-lg text-gray-900">12h - 24h: Sensor Calibration</h4>
+                        <p class="text-sm text-gray-500">The "Senses" Phase</p>
+                        <div id="timeline-p2" class="hidden mt-3 p-4 bg-gray-50 rounded border border-gray-200 text-sm">
+                            <ul class="list-disc list-inside space-y-1 text-gray-700">
+                                <li>Read raw sensor data to Serial Monitor</li>
+                                <li>Establish threshold values for "detected" vs "noise"</li>
+                                <li>Write basic "follow" logic (Bang-Bang control)</li>
+                                <li>Construct the Docking Station (IR Emitter / Target)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Phase 3 -->
+                    <div class="relative pl-8 cursor-pointer group" onclick="toggleTimeline('p3')">
+                        <div class="absolute -left-3 top-0 bg-white border-4 border-purple-500 w-6 h-6 rounded-full"></div>
+                        <h4 class="font-bold text-lg text-gray-900">24h - 36h: PID & Logic</h4>
+                        <p class="text-sm text-gray-500">The "Brain" Phase</p>
+                        <div id="timeline-p3" class="hidden mt-3 p-4 bg-gray-50 rounded border border-gray-200 text-sm">
+                            <ul class="list-disc list-inside space-y-1 text-gray-700">
+                                <li>Implement PID controller for smooth approach</li>
+                                <li>Code the State Machine (Search -> Dock)</li>
+                                <li>Handle edge cases (Robot loses target)</li>
+                                <li>Test "Latching" mechanism (mechanical contact)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Phase 4 -->
+                    <div class="relative pl-8 cursor-pointer group" onclick="toggleTimeline('p4')">
+                        <div class="absolute -left-3 top-0 bg-white border-4 border-green-500 w-6 h-6 rounded-full"></div>
+                        <h4 class="font-bold text-lg text-gray-900">36h - 48h: Integration & Polish</h4>
+                        <p class="text-sm text-gray-500">The "Final Stretch"</p>
+                        <div id="timeline-p4" class="hidden mt-3 p-4 bg-gray-50 rounded border border-gray-200 text-sm">
+                            <ul class="list-disc list-inside space-y-1 text-gray-700">
+                                <li>Full system loop testing</li>
+                                <li>Adjust PID Kp, Ki, Kd values</li>
+                                <li>Cable management (prevent snags)</li>
+                                <li>Prepare demo presentation</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-100 border-t border-gray-200 mt-auto">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-xs text-gray-500">
+                Hackathon Project Resource | Generated for Student Robotics
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // State Management
+        const appState = {
+            currentTab: 'brief',
+            hardwareSelection: null,
+            charts: {}
+        };
+
+        // Navigation Logic
+        function switchTab(tabId) {
+            // Update State
+            appState.currentTab = tabId;
+
+            // Hide all sections
+            ['brief', 'hardware', 'software', 'timeline'].forEach(id => {
+                document.getElementById(`view-${id}`).classList.add('hidden');
+                document.getElementById(`nav-${id}`).classList.remove('active', 'text-blue-600', 'border-blue-600');
+                document.getElementById(`nav-${id}`).classList.add('text-gray-500', 'border-transparent');
+            });
+
+            // Show selected section
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            
+            // Highlight Nav
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            activeBtn.classList.add('active');
+            activeBtn.classList.remove('text-gray-500', 'border-transparent');
+
+            // Render Charts if Hardware tab is selected and chart doesn't exist
+            if (tabId === 'hardware' && !appState.charts.radar) {
+                renderRadarChart();
+            }
+        }
+
+        // Hardware Detail Interaction
+        function updateHardwareDetail(component) {
+            const detailBox = document.getElementById('hardware-detail-text');
+            const details = {
+                'mcu': "The Microcontroller Unit (MCU) is the brain. Arduino Uno is easiest for beginners (5V logic). ESP32 offers WiFi/Bluetooth for telemetry and faster processing (3.3V logic).",
+                'motor': "Motor Drivers bridge the low-power MCU and high-power motors. The L298N is a classic dual H-Bridge but drops ~2V. The TB6612FNG is more efficient (MOSFET-based) and smaller.",
+                'sensor': "IR Photodiodes are cheap and fast but affected by sunlight. Ultrasonic (HC-SR04) provides distance but has a wide beam width (low angular resolution). Cameras (Pixy/OV7670) are complex but offer color tracking.",
+                'power': "Li-Ion 18650 cells have high energy density. Two in series (2S) gives 7.4V nominal, perfect for 6V motors. Use a buck converter (LM2596) to step down to 5V for the Arduino."
+            };
+            
+            detailBox.textContent = details[component] || "Select a component.";
+            
+            // Visual feedback
+            const card = document.querySelector(`[onclick="updateHardwareDetail('${component}')"]`);
+            // Reset others (simplistic approach)
+            document.querySelectorAll('.interactive-card').forEach(el => el.style.borderColor = '#e5e7eb');
+            if(card) card.style.borderColor = '#3b82f6';
+        }
+
+        // Software Logic Interaction
+        function showStateCode(state) {
+            const display = document.getElementById('code-display');
+            let content = '';
+
+            if (state === 'search') {
+                content = `<span class="text-gray-500">// STATE: SEARCH</span><br>
+                           <span class="text-green-400">void</span> searchRoutine() {<br>
+                           &nbsp;&nbsp;<span class="text-gray-500">// Spin until IR signal detected</span><br>
+                           &nbsp;&nbsp;setMotors(30, -30); <span class="text-gray-500">// Rotate</span><br>
+                           &nbsp;&nbsp;<span class="text-purple-400">if</span> (readIR() > THRESHOLD) {<br>
+                           &nbsp;&nbsp;&nbsp;&nbsp;stopMotors();<br>
+                           &nbsp;&nbsp;&nbsp;&nbsp;currentState = APPROACH;<br>
+                           &nbsp;&nbsp;}<br>
+                           }`;
+            } else if (state === 'approach') {
+                content = `<span class="text-gray-500">// STATE: APPROACH</span><br>
+                           <span class="text-green-400">void</span> pidControl() {<br>
+                           &nbsp;&nbsp;<span class="text-gray-500">// Calculate Error based on sensor difference</span><br>
+                           &nbsp;&nbsp;<span class="text-blue-400">int</span> error = leftSensor - rightSensor;<br>
+                           &nbsp;&nbsp;<span class="text-blue-400">int</span> correction = Kp * error;<br><br>
+                           &nbsp;&nbsp;setMotors(BASE_SPEED + correction, BASE_SPEED - correction);<br><br>
+                           &nbsp;&nbsp;<span class="text-purple-400">if</span> (distance < 10_cm) currentState = ALIGN;<br>
+                           }`;
+            } else if (state === 'align') {
+                content = `<span class="text-gray-500">// STATE: ALIGN</span><br>
+                           <span class="text-green-400">void</span> fineTune() {<br>
+                           &nbsp;&nbsp;<span class="text-gray-500">// Slow down for final approach</span><br>
+                           &nbsp;&nbsp;<span class="text-purple-400">if</span> (!aligned) {<br>
+                           &nbsp;&nbsp;&nbsp;&nbsp;wiggleToCenter();<br>
+                           &nbsp;&nbsp;} <span class="text-purple-400">else</span> {<br>
+                           &nbsp;&nbsp;&nbsp;&nbsp;moveForwardSlow();<br>
+                           &nbsp;&nbsp;}<br>
+                           &nbsp;&nbsp;<span class="text-purple-400">if</span> (contactSwitch.isPressed()) currentState = DOCK;<br>
+                           }`;
+            } else if (state === 'dock') {
+                content = `<span class="text-gray-500">// STATE: DOCK</span><br>
+                           <span class="text-green-400">void</span> stopAndCharge() {<br>
+                           &nbsp;&nbsp;stopMotors();<br>
+                           &nbsp;&nbsp;digitalWrite(LED_CHARGING, HIGH);<br>
+                           &nbsp;&nbsp;<span class="text-gray-500">// Check voltage to confirm connection</span><br>
+                           &nbsp;&nbsp;<span class="text-purple-400">if</span> (readVoltage() > 5.0) {<br>
+                           &nbsp;&nbsp;&nbsp;&nbsp;Serial.println("CHARGING STARTED");<br>
+                           &nbsp;&nbsp;}<br>
+                           }`;
+            }
+
+            display.innerHTML = content;
+        }
+
+        // Timeline Interaction
+        function toggleTimeline(id) {
+            const el = document.getElementById(`timeline-${id}`);
+            el.classList.toggle('hidden');
+        }
+
+        // Chart Rendering
+        function renderRadarChart() {
+            const ctx = document.getElementById('sensorRadarChart').getContext('2d');
+            
+            appState.charts.radar = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Cost (Low is good)', 'Ease of Code', 'Precision', 'Range', 'CPU Efficiency'],
+                    datasets: [{
+                        label: 'IR Beacons',
+                        data: [9, 8, 6, 4, 9],
+                        fill: true,
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgb(59, 130, 246)',
+                        pointBackgroundColor: 'rgb(59, 130, 246)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(59, 130, 246)'
+                    }, {
+                        label: 'Ultrasonic',
+                        data: [8, 7, 4, 7, 8],
+                        fill: true,
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        borderColor: 'rgb(16, 185, 129)',
+                        pointBackgroundColor: 'rgb(16, 185, 129)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(16, 185, 129)'
+                    }, {
+                        label: 'Camera',
+                        data: [4, 3, 9, 9, 2],
+                        fill: true,
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        borderColor: 'rgb(239, 68, 68)',
+                        pointBackgroundColor: 'rgb(239, 68, 68)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(239, 68, 68)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    elements: {
+                        line: { borderWidth: 2 }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: { display: true },
+                            suggestedMin: 0,
+                            suggestedMax: 10,
+                            ticks: { display: false } // Hide numbers for cleaner look
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // Initialize Defaults
+        document.addEventListener('DOMContentLoaded', () => {
+            // Optional: Auto-load hardware tab to show chart for demo, or keep Brief as default
+            // switchTab('hardware'); 
+        });
+
+    </script>
+</body>
+</html>
